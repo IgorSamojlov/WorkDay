@@ -6,38 +6,38 @@ module WorkDay
     attr_accessor :year, :table, :month
 
     def initialize (calendar)
-      load_calendar calendar
+      @table = {}
+      table = CSV.read(calendar)
+      parse_calendar table
     end
 
     def type(date=Date.new.today)
-      prepere_year date
-      return :day_off if @month.include? date.day.to_s
-      return :half_day if @month.include? date.day.to_s << '*'
-      :work_day
+      @table.has_key?(date.year) ? month = @table[date.year][date.month] : (return false)
+      if month.include?(date.day.to_s)
+        return :day_off
+      elsif month.include?(date.day.to_s << '*')
+        return :half_day
+      else
+        return :work_day
+      end
     end
 
     def week_day(date=Date.new.today)
-      prepere_year date
-
-    end
-
-    def day_off(date=Date.new.today)
-    end
-
-    def count(from_date, to_date)
+      month = @table[date.year][date.month].map do |d|
+        d.delete '*' if d.include? '*'
+        return false if d == date.day.to_s
+        d.to_i
+      end
+      (Array(1..date.day) - month).count - 1
     end
 
     private
 
-    def prepere_year(current_date)
-      @table.each { |year| @year = year if current_date.year.to_s == year[0] }
-      @year = @year[1..12].map { |month| month.lines(',', chomp: true) }
-      @month = @year[current_date.month.to_i - 1]
-    end
-
-    def load_calendar(calendar)
-      # для проверки на ошибки
-      @table = CSV.read(calendar)
+    def parse_calendar(table)
+      table.delete_at(0)
+      table.each do |year|
+        @table[year[0].to_i] = year[1..12].map { |month| month.lines(',', chomp: true) }.insert(0, nil)
+      end
     end
   end
 end
