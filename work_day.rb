@@ -31,6 +31,16 @@ module WorkDay
       (Array(1..date.day) - month).count - 1
     end
 
+    def day_off(date=Date.new.today)
+      month = @table[date.year][date.month]
+      if !month.include? date.day.to_s || month.include?(date.day.to_s << '*')
+        return false
+      else
+        month.delete_if { |d| d.include? '*' }
+        return month.index date.day.to_s
+      end
+    end
+
     private
 
     def parse_calendar(table)
